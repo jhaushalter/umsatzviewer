@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f4f6f2">
+    <title>Zahlungsverkehr | Haushalter</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+
+    <style>
+        :root {
+            color-scheme: light;
+            --page: #f4f6f2;
+            --paper: #fff;
+            --ink: #1d2924;
+            --muted: #748078;
+            --line: #e7ebe6;
+            --green: #236b4c;
+            --green-dark: #194d38;
+            --green-soft: #e8f2eb;
+            --red: #a64e43;
+            --shadow: 0 16px 42px rgba(34, 52, 42, .07);
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            min-width: 320px;
+            margin: 0;
+            background: var(--page);
+            color: var(--ink);
+            font-family: "DM Sans", "Segoe UI", sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .topbar {
+            height: 66px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 clamp(20px, 5vw, 76px);
+            background: var(--green-dark);
+            color: #f6f8f4;
+        }
+
+        .brand { display: flex; align-items: center; gap: 11px; font-size: 13px; font-weight: 700; letter-spacing: .08em; }
+        .brand-mark { display: grid; width: 30px; height: 30px; place-items: center; border: 1px solid rgba(255,255,255,.32); border-radius: 8px; color: #d8e9dc; font-family: "Fraunces", Georgia, serif; font-size: 18px; }
+        .topbar-note { color: #c1d2c7; font-size: 12px; }
+
+        main { width: min(1380px, calc(100% - 48px)); margin: 0 auto; padding: 52px 0 64px; }
+        .page-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 28px; }
+        .heading-actions { display: flex; align-items: flex-end; gap: 12px; }
+        .view-picker { display: grid; gap: 5px; color: var(--muted); font-size: 11px; font-weight: 600; }
+        .view-picker select { min-width: 190px; }
+        .eyebrow { margin: 0 0 9px; color: var(--green); font-size: 11px; font-weight: 700; letter-spacing: .13em; text-transform: uppercase; }
+        h1 { margin: 0; font-family: "Fraunces", Georgia, serif; font-size: clamp(32px, 4vw, 44px); font-weight: 500; line-height: 1.1; }
+        .subtitle { margin: 10px 0 0; color: var(--muted); font-size: 14px; }
+        .live-status { display: inline-flex; align-items: center; gap: 8px; padding: 9px 12px; border: 1px solid #dce9df; border-radius: 999px; background: #f7fbf7; color: var(--green-dark); font-size: 12px; font-weight: 600; white-space: nowrap; }
+        .status-dot { width: 7px; height: 7px; border-radius: 50%; background: #4a9a69; box-shadow: 0 0 0 3px #e2f1e6; }
+        .live-status.is-error { border-color: #eedbd7; background: #fdf7f5; color: var(--red); }
+        .live-status.is-error .status-dot { background: var(--red); box-shadow: 0 0 0 3px #f8e9e5; }
+
+        .metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-bottom: 22px; }
+        .metric { min-height: 104px; padding: 19px 22px; border: 1px solid #e8ece7; border-radius: 8px; background: var(--paper); }
+        .metric-label { color: var(--muted); font-size: 12px; font-weight: 500; }
+        .metric-value { display: block; margin-top: 9px; font-family: "Fraunces", Georgia, serif; font-size: 27px; line-height: 1; }
+        .metric-value.is-text { color: var(--green); font-family: "DM Sans", "Segoe UI", sans-serif; font-size: 18px; font-weight: 600; }
+
+        .table-panel { overflow: hidden; border: 1px solid #e5e9e4; border-radius: 9px; background: var(--paper); box-shadow: var(--shadow); }
+        .table-heading { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 21px 24px 18px; border-bottom: 1px solid var(--line); }
+        .table-heading h2 { margin: 0; font-size: 15px; font-weight: 700; }
+        .table-heading p { margin: 5px 0 0; color: var(--muted); font-size: 12px; }
+        .table-controls { display: flex; align-items: center; gap: 10px; }
+        .search-box { display: flex; width: min(270px, 30vw); height: 38px; align-items: center; gap: 9px; padding: 0 11px; border: 1px solid #dfe5df; border-radius: 6px; background: #fff; color: var(--muted); }
+        .search-box svg { width: 16px; height: 16px; flex: 0 0 auto; }
+        .search-box input { width: 100%; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--ink); font: inherit; font-size: 12px; }
+        .search-box:focus-within { border-color: #73a385; box-shadow: 0 0 0 3px rgba(35,107,76,.1); }
+        select { height: 38px; padding: 0 30px 0 11px; border: 1px solid #dfe5df; border-radius: 6px; background: #fff; color: var(--ink); font: inherit; font-size: 12px; }
+        .table-wrap { padding: 0 16px; }
+
+        table.dataTable { width: 100% !important; margin: 0 !important; border-collapse: separate !important; border-spacing: 0; color: var(--ink); font-size: 12px; }
+        table.dataTable thead th { padding: 14px !important; border-bottom: 1px solid var(--line) !important; background: #f8faf7; color: #68756c; font-size: 10px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; white-space: nowrap; }
+        table.dataTable thead th:first-child { border-radius: 5px 0 0 5px; }
+        table.dataTable thead th:last-child { border-radius: 0 5px 5px 0; }
+        table.dataTable tbody td { padding: 13px 14px !important; border-bottom: 1px solid #edf0ec !important; color: #344139; white-space: nowrap; }
+        table.dataTable tbody tr { background: #fff !important; }
+        table.dataTable tbody tr:hover { background: #f7faf7 !important; }
+        table.dataTable tbody tr:last-child td { border-bottom: 0 !important; }
+        table.dataTable thead .sorting, table.dataTable thead .sorting_asc, table.dataTable thead .sorting_desc { background-position: right 6px center; }
+
+        .grid-footer { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 14px 24px 17px; border-top: 1px solid var(--line); }
+        .grid-footer .dataTables_info { padding: 0; color: var(--muted); font-size: 11px; }
+        .grid-footer .dataTables_paginate { padding: 0; }
+        .grid-footer .paginate_button { min-width: 32px; margin-left: 3px !important; padding: 7px 10px !important; border: 1px solid transparent !important; border-radius: 5px !important; color: #526056 !important; font-size: 11px; }
+        .grid-footer .paginate_button.current, .grid-footer .paginate_button.current:hover { border-color: var(--green) !important; background: var(--green) !important; color: #fff !important; }
+        .grid-footer .paginate_button:hover { border-color: #dfe8e0 !important; background: #f2f7f2 !important; color: var(--green-dark) !important; }
+
+        .state { padding: 52px 20px; text-align: center; }
+        .state-mark { display: grid; width: 42px; height: 42px; margin: 0 auto 13px; place-items: center; border-radius: 50%; background: var(--green-soft); color: var(--green); font-size: 18px; }
+        .state h3 { margin: 0; font-size: 14px; }
+        .state p { margin: 6px 0 0; color: var(--muted); font-size: 12px; }
+        .state.error .state-mark { background: #f8ece9; color: var(--red); }
+        [hidden] { display: none !important; }
+
+        @media (max-width: 720px) {
+            .topbar { height: 58px; padding: 0 20px; }
+            .topbar-note { display: none; }
+            main { width: calc(100% - 32px); padding-top: 34px; }
+            .page-heading { align-items: flex-start; flex-direction: column; }
+            .heading-actions { align-items: flex-start; flex-direction: column; }
+            .live-status { margin-top: 5px; }
+            .metrics { gap: 9px; }
+            .metric { min-height: 90px; padding: 15px 13px; }
+            .metric-value { font-size: 23px; }
+            .table-heading { align-items: flex-start; flex-direction: column; padding: 18px; }
+            .table-controls { width: 100%; }
+            .search-box { width: 100%; flex: 1; }
+            .table-wrap { padding: 0 10px; }
+            .grid-footer { align-items: flex-start; flex-direction: column; padding: 13px 16px; }
+            .grid-footer .dataTables_paginate { align-self: flex-end; }
+        }
+
+        @media (max-width: 440px) {
+            main { width: calc(100% - 24px); }
+            .page-heading { flex-direction: column; gap: 13px; }
+            .heading-actions { width: 100%; }
+            .view-picker, .view-picker select { width: 100%; }
+            .metrics { grid-template-columns: 1fr 1fr; }
+            .metric:last-child { grid-column: span 2; min-height: auto; }
+            .metric:last-child .metric-value { margin-top: 6px; }
+            .table-controls select { flex: 0 0 auto; }
+        }
+    </style>
+</head>
+<body>
+    <header class="topbar">
+        <div class="brand"><span class="brand-mark" aria-hidden="true">H</span><span>HAUSHALTER</span></div>
+        <div class="topbar-note">Finanzen&nbsp; / &nbsp;Kontobewegungen</div>
+    </header>
+
+    <main>
+        <section class="page-heading" aria-labelledby="page-title">
+            <div>
+                <p class="eyebrow">Finanzübersicht</p>
+                <h1 id="page-title">Zahlungsverkehr</h1>
+                <p class="subtitle">Alle Kontobewegungen auf einen Blick.</p>
+            </div>
+            <div class="heading-actions">
+                <label class="view-picker" for="view-select">
+                    Datenansicht
+                    <select id="view-select">
+                        <option value="Umsatzdetails" selected>Umsatzdetails</option>
+                        <option value="Stammdaten">Stammdaten</option>
+                        <option value="TOP_Empfänger">TOP_Empfänger</option>
+                        <option value="Einsatzentgelt_Jahr">Einsatzentgelt_Jahr</option>
+                        <option value="Purposecodes">Purposecodes</option>
+                        <option value="Jahreseinkommen">Jahreseinkommen</option>
+                    </select>
+                </label>
+                <div class="live-status"><span class="status-dot" aria-hidden="true"></span><span id="connection-label">Verbindung wird hergestellt</span></div>
+            </div>
+        </section>
+
+        <section class="metrics" aria-label="Datenübersicht">
+            <div class="metric"><span class="metric-label">Datensätze</span><strong class="metric-value" id="record-count">–</strong></div>
+            <div class="metric"><span class="metric-label">Datenfelder</span><strong class="metric-value" id="field-count">–</strong></div>
+            <div class="metric"><span class="metric-label">Datenquelle</span><strong class="metric-value is-text" id="source-status">Wird geladen</strong></div>
+        </section>
+
+        <section class="table-panel" aria-labelledby="table-title">
+            <div class="table-heading">
+                <div>
+                    <h2 id="table-title">Umsatzdetails</h2>
+                    <p>Durchsuchen und sortieren Sie Ihre Buchungen.</p>
+                </div>
+                <div class="table-controls" id="table-controls" hidden>
+                    <label class="search-box" for="table-search">
+                        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8" stroke="currentColor" stroke-width="1.7"/><path d="m16 16 4.2 4.2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+                        <input id="table-search" type="search" placeholder="Umsätze durchsuchen" autocomplete="off">
+                    </label>
+                    <select id="page-size" aria-label="Einträge pro Seite">
+                        <option value="25">25</option>
+                        <option value="50" selected>50</option>
+                        <option value="100">100</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="state" id="loading-state" role="status">
+                <span class="state-mark" aria-hidden="true">…</span>
+                <h3>Umsätze werden geladen</h3>
+                <p>Die Verbindung zur Datenquelle wird aufgebaut.</p>
+            </div>
+            <div class="state" id="empty-state" hidden>
+                <span class="state-mark" aria-hidden="true">–</span>
+                <h3>Keine Buchungen vorhanden</h3>
+                <p>Für diese Datenquelle wurden keine Umsätze gefunden.</p>
+            </div>
+            <div class="state error" id="error-state" hidden role="alert">
+                <span class="state-mark" aria-hidden="true">!</span>
+                <h3>Umsätze konnten nicht geladen werden</h3>
+                <p>Bitte prüfen Sie die Verbindung und versuchen Sie es später erneut.</p>
+            </div>
+            <div class="table-wrap" id="table-wrap" hidden>
+                <table id="umsatz" class="display" aria-label="Zahlungsverkehr"></table>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        const loadingState = document.getElementById("loading-state");
+        const emptyState = document.getElementById("empty-state");
+        const errorState = document.getElementById("error-state");
+        const tableWrap = document.getElementById("table-wrap");
+        const tableControls = document.getElementById("table-controls");
+        const connectionLabel = document.getElementById("connection-label");
+        const viewSelect = document.getElementById("view-select");
+        let activeTable = null;
+        let latestRequest = 0;
+
+        function showState(state) {
+            loadingState.hidden = state !== "loading";
+            emptyState.hidden = state !== "empty";
+            errorState.hidden = state !== "error";
+            tableWrap.hidden = state !== "table";
+            tableControls.hidden = state !== "table";
+        }
+
+        function clearTable() {
+            if ($.fn.DataTable.isDataTable("#umsatz")) {
+                $("#umsatz").DataTable().clear().destroy();
+            }
+            $("#umsatz").empty();
+            activeTable = null;
+        }
+
+        function loadView(viewName) {
+            const requestId = ++latestRequest;
+            viewSelect.disabled = true;
+            document.getElementById("table-title").textContent = viewName;
+            document.getElementById("record-count").textContent = "–";
+            document.getElementById("field-count").textContent = "–";
+            document.getElementById("source-status").textContent = "Wird geladen";
+            document.getElementById("source-status").style.color = "";
+            document.querySelector(".live-status").classList.remove("is-error");
+            connectionLabel.textContent = "Daten werden geladen";
+            clearTable();
+            showState("loading");
+
+            fetch("api/umsatzdetails?view=" + encodeURIComponent(viewName))
+                .then(response => {
+                    if (!response.ok) throw new Error("Datenansicht konnte nicht geladen werden");
+                    return response.json();
+                })
+                .then(data => {
+                    if (requestId !== latestRequest) return;
+                    if (!Array.isArray(data)) throw new Error("Ungültiges Datenformat");
+
+                    document.getElementById("record-count").textContent = data.length.toLocaleString("de-DE");
+                    document.getElementById("source-status").textContent = "Verbunden";
+                    connectionLabel.textContent = "Daten aktuell";
+
+                    if (data.length === 0) {
+                        document.getElementById("field-count").textContent = "0";
+                        showState("empty");
+                        return;
+                    }
+
+                    const columns = Object.keys(data[0]).map(key => ({
+                        title: key,
+                        data: key,
+                        defaultContent: "",
+                        render: $.fn.dataTable.render.text()
+                    }));
+
+                    document.getElementById("field-count").textContent = columns.length.toLocaleString("de-DE");
+                    activeTable = $("#umsatz").DataTable({
+                        data: data,
+                        columns: columns,
+                        pageLength: 50,
+                        lengthChange: false,
+                        searching: true,
+                        ordering: true,
+                        autoWidth: false,
+                        scrollX: true,
+                        scrollY: "58vh",
+                        scrollCollapse: true,
+                        dom: 'rt<"grid-footer"ip>',
+                        language: {
+                            info: "_START_–_END_ von _TOTAL_ Datensätzen",
+                            infoEmpty: "Keine Datensätze",
+                            infoFiltered: "(gefiltert aus _MAX_ Datensätzen)",
+                            zeroRecords: "Keine passenden Datensätze gefunden",
+                            paginate: { previous: "Zurück", next: "Weiter" }
+                        }
+                    });
+                    showState("table");
+                })
+                .catch(error => {
+                    if (requestId !== latestRequest) return;
+                    console.error(error);
+                    document.getElementById("source-status").textContent = "Nicht erreichbar";
+                    document.getElementById("source-status").style.color = "var(--red)";
+                    connectionLabel.textContent = "Verbindung fehlgeschlagen";
+                    document.querySelector(".live-status").classList.add("is-error");
+                    showState("error");
+                })
+                .finally(() => {
+                    if (requestId === latestRequest) viewSelect.disabled = false;
+                });
+        }
+
+        viewSelect.addEventListener("change", () => loadView(viewSelect.value));
+        document.getElementById("table-search").addEventListener("input", event => {
+            if (activeTable) activeTable.search(event.target.value).draw();
+        });
+        document.getElementById("page-size").addEventListener("change", event => {
+            if (activeTable) activeTable.page.len(Number(event.target.value)).draw();
+        });
+
+        loadView(viewSelect.value);
+    </script>
+</body>
+</html>
